@@ -1,33 +1,34 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
-include_once '../../models/User.php';
+include_once '../../models/Cliente.php';
 
 $database = new Database();
 $db = $database->getConnection();
 
-$user = new User($db);
+$cliente = new Cliente($db);
 
 $data = json_decode(file_get_contents("php://input"));
 
 if(!empty($data->phone) && !empty($data->password)) {
     
-    if($user->login($data->phone, $data->password)) {
+    if($cliente->login($data->phone, $data->password)) {
         
         $response = array(
             "sucesso" => true,
             "mensagem" => "Login realizado com sucesso!",
             "usuario" => array(
-                "id" => $user->id,
-                "nome" => $user->nome,
-                "telefone" => $user->telefone,
-                "email" => $user->email,
-                "endereco" => $user->endereco,
-                "numero" => $user->numero,
-                "complemento" => $user->complemento,
-                "cidade" => $user->cidade,
-                "eh_admin" => $user->eh_admin,
-                "criado_em" => $user->criado_em
+                "id" => $cliente->codigo,
+                "nome" => $cliente->nome,
+                "telefone" => $cliente->telefone,
+                "email" => $cliente->email,
+                "endereco" => $cliente->rua,
+                "numero" => $cliente->numero,
+                "complemento" => $cliente->complemento,
+                "cidade" => $cliente->sigla_cidade,
+                "bairro" => $cliente->bairro,
+                "cep" => $cliente->cep,
+                "criado_em" => $cliente->criado_em
             )
         );
         

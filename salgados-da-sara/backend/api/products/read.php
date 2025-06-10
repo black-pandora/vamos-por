@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 try {
     include_once '../../config/database.php';
-    include_once '../../models/Product.php';
+    include_once '../../models/Produto.php';
 
     $database = new Database();
     $db = $database->getConnection();
@@ -23,9 +23,9 @@ try {
         throw new Exception('Erro de conexão com banco de dados');
     }
 
-    $product = new Product($db);
+    $produto = new Produto($db);
 
-    $stmt = $product->readAll();
+    $stmt = $produto->readAll();
     $num = $stmt->rowCount();
 
     if($num > 0) {
@@ -34,12 +34,23 @@ try {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             extract($row);
             
+            // Mapear categoria para o formato antigo
+            $categoria_map = [
+                'Salgados Fritos' => 'salgados',
+                'Sortidos' => 'sortidos',
+                'Assados' => 'assados',
+                'Especiais' => 'especiais',
+                'Opcionais' => 'opcionais'
+            ];
+            
+            $categoria_antiga = $categoria_map[$nome_categoria] ?? 'salgados';
+            
             $product_item = array(
-                "id" => $id,
-                "nome" => $nome,
+                "id" => $id_produto,
+                "nome" => $sabor ? $nome . ' - ' . $sabor : $nome,
                 "preco" => floatval($preco),
-                "categoria" => $categoria,
-                "descricao" => $descricao,
+                "categoria" => $categoria_antiga,
+                "descricao" => $descricao_categoria,
                 "eh_porcionado" => $eh_porcionado,
                 "eh_personalizado" => $eh_personalizado,
                 "criado_em" => $criado_em

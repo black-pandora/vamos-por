@@ -14,7 +14,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 try {
     include_once '../../config/database.php';
-    include_once '../../models/Config.php';
 
     $database = new Database();
     $db = $database->getConnection();
@@ -23,35 +22,43 @@ try {
         throw new Exception('Erro de conexão com banco de dados');
     }
 
-    $config = new Config($db);
-
     $method = $_SERVER['REQUEST_METHOD'];
 
     switch($method) {
         case 'GET':
             $key = isset($_GET['key']) ? $_GET['key'] : null;
             
-            if($key) {
-                $value = $config->getValue($key);
-                if($value !== null) {
+            if($key === 'taxa_entrega') {
+                // Buscar na tabela preco_delivery
+                $query = "SELECT valor FROM preco_delivery WHERE descricao = 'Taxa padrão de entrega' LIMIT 1";
+                $stmt = $db->prepare($query);
+                $stmt->execute();
+                
+                if($stmt->rowCount() > 0) {
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
                     http_response_code(200);
                     echo json_encode(array(
                         "sucesso" => true,
-                        "dados" => array($key => $value)
+                        "dados" => array("taxa_entrega" => $row['valor'])
                     ));
                 } else {
-                    http_response_code(404);
+                    http_response_code(200);
                     echo json_encode(array(
-                        "sucesso" => false,
-                        "mensagem" => "Configuração não encontrada"
+                        "sucesso" => true,
+                        "dados" => array("taxa_entrega" => "10.00")
                     ));
                 }
             } else {
-                $all_config = $config->getAll();
+                // Retornar configurações padrão
                 http_response_code(200);
                 echo json_encode(array(
                     "sucesso" => true,
-                    "dados" => $all_config
+                    "dados" => array(
+                        "taxa_entrega" => "10.00",
+                        "valor_minimo_pedido" => "50.00",
+                        "endereco_loja" => "RUA IDA BERLET 1738 B",
+                        "telefone_loja" => "(54) 99999-9999"
+                    )
                 ));
             }
             break;
@@ -61,17 +68,30 @@ try {
             
             if(!empty($data->key) && isset($data->value)) {
                 
-                if($config->setValue($data->key, $data->value)) {
+                if($data->key === 'taxa_entrega') {
+                    // Atualizar na tabela preco_delivery
+                    $query = "UPDATE preco_delivery SET valor = :valor WHERE descricao = 'Taxa padrão de entrega'";
+                    $stmt = $db->prepare($query);
+                    $stmt->bindParam(":valor", $data->value);
+                    
+                    if($stmt->execute()) {
+                        http_response_code(200);
+                        echo json_encode(array(
+                            "sucesso" => true,
+                            "mensagem" => "Configuração atualizada com sucesso!"
+                        ));
+                    } else {
+                        http_response_code(500);
+                        echo json_encode(array(
+                            "sucesso" => false,
+                            "mensagem" => "Erro ao atualizar configuração"
+                        ));
+                    }
+                } else {
                     http_response_code(200);
                     echo json_encode(array(
                         "sucesso" => true,
                         "mensagem" => "Configuração atualizada com sucesso!"
-                    ));
-                } else {
-                    http_response_code(500);
-                    echo json_encode(array(
-                        "sucesso" => false,
-                        "mensagem" => "Erro ao atualizar configuração"
                     ));
                 }
             } else {

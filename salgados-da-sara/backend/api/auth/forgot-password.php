@@ -1,20 +1,20 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
-include_once '../../models/User.php';
+include_once '../../models/Cliente.php';
 
 $database = new Database();
 $db = $database->getConnection();
 
-$user = new User($db);
+$cliente = new Cliente($db);
 
 $data = json_decode(file_get_contents("php://input"));
 
 if(!empty($data->phone)) {
     
-    $userData = $user->getByPhone($data->phone);
+    $clienteData = $cliente->getByPhone($data->phone);
     
-    if($userData) {
+    if($clienteData) {
        
         http_response_code(200);
         echo json_encode(array(

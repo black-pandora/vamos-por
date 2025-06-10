@@ -1,20 +1,20 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
-include_once '../../models/Product.php';
+include_once '../../models/Produto.php';
 
 $database = new Database();
 $db = $database->getConnection();
 
-$product = new Product($db);
+$produto = new Produto($db);
 
 $data = json_decode(file_get_contents("php://input"));
 
 if(!empty($data->id)) {
     
-    $product->id = $data->id;
+    $produto->id_produto = $data->id;
 
-    if($product->delete()) {
+    if($produto->delete()) {
         http_response_code(200);
         echo json_encode(array(
             "sucesso" => true,

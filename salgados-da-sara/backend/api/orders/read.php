@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') {
 
 try {
     include_once '../../config/database.php';
-    include_once '../../models/Order.php';
+    include_once '../../models/Pedido.php';
 
     $database = new Database();
     $db = $database->getConnection();
@@ -23,14 +23,14 @@ try {
         throw new Exception('Erro de conexão com banco de dados');
     }
 
-    $order = new Order($db);
+    $pedido = new Pedido($db);
 
-    $user_id = isset($_GET['user_id']) ? $_GET['user_id'] : null;
+    $codigo_cliente = isset($_GET['user_id']) ? $_GET['user_id'] : null;
 
-    if($user_id) {
-        $stmt = $order->readByUser($user_id);
+    if($codigo_cliente) {
+        $stmt = $pedido->readByCliente($codigo_cliente);
     } else {
-        $stmt = $order->readAll();
+        $stmt = $pedido->readAll();
     }
 
     $num = $stmt->rowCount();
@@ -41,35 +41,41 @@ try {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             extract($row);
             
-            $order_item = array(
-                "id" => $id,
-                "numero_pedido" => $numero_pedido,
-                "usuario_id" => $usuario_id,
-                "dados_cliente" => json_decode($dados_cliente, true),
-                "itens" => json_decode($itens, true),
-                "subtotal" => floatval($subtotal),
-                "taxa_entrega" => floatval($taxa_entrega),
-                "total" => floatval($total),
-                "eh_entrega" => $eh_entrega,
-                "metodo_pagamento" => $metodo_pagamento,
-                "status" => $status,
-                "motivo_rejeicao" => $motivo_rejeicao,
-                "criado_em" => $criado_em
-            );
+            // Obter itens do pedido
+            $pedido->id_pedido = $id_pedido;
+            $itens_stmt = $pedido->getItens();
+            $itens = array();
             
-            $order->id = $id;
-            $history_stmt = $order->getStatusHistory();
-            $status_history = array();
-            
-            while($history_row = $history_stmt->fetch(PDO::FETCH_ASSOC)) {
-                $status_history[] = array(
-                    "status" => $history_row['status'],
-                    "descricao" => $history_row['descricao'],
-                    "criado_em" => $history_row['criado_em']
+            while($item_row = $itens_stmt->fetch(PDO::FETCH_ASSOC)) {
+                $itens[] = array(
+                    "id" => $item_row['id_produto'],
+                    "nome" => $item_row['sabor'] ? $item_row['nome'] . ' - ' . $item_row['sabor'] : $item_row['nome'],
+                    "quantity" => intval($item_row['quantidade']),
+                    "quantityType" => $item_row['tipo_quantidade'],
+                    "unitCount" => intval($item_row['quantidade_unidades']),
+                    "totalPrice" => floatval($item_row['preco_unitario'] * $item_row['quantidade'])
                 );
             }
             
-            $order_item["historico_status"] = $status_history;
+            $order_item = array(
+                "id" => $id_pedido,
+                "numero_pedido" => $numero_pedido,
+                "usuario_id" => $codigo_cliente,
+                "dados_cliente" => array(
+                    "name" => $nome_cliente ?? '',
+                    "phone" => $telefone_cliente ?? '',
+                    "city" => $cidade_nome ?? ''
+                ),
+                "itens" => $itens,
+                "subtotal" => floatval($valor),
+                "taxa_entrega" => $forma_entrega === 'entrega' ? 10.00 : 0.00,
+                "total" => floatval($valor),
+                "eh_entrega" => $forma_entrega === 'entrega',
+                "metodo_pagamento" => $forma_pagamento,
+                "status" => $status,
+                "motivo_rejeicao" => $observacoes,
+                "criado_em" => $data_pedido
+            );
             
             array_push($orders_arr, $order_item);
         }

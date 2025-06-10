@@ -14,7 +14,7 @@ ini_set('display_errors', 0);
 
 try {
     include_once '../../config/database.php';
-    include_once '../../models/User.php';
+    include_once '../../models/Cliente.php';
 
     $database = new Database();
     $db = $database->getConnection();
@@ -23,7 +23,7 @@ try {
         throw new Exception('Falha na conexão com banco de dados');
     }
 
-    $user = new User($db);
+    $cliente = new Cliente($db);
 
     $input = file_get_contents("php://input");
     $data = json_decode($input);
@@ -66,12 +66,36 @@ try {
         $errors['confirmPassword'] = "Senhas não coincidem";
     }
 
+    // Mapear cidade para sigla
+    $cidades_map = [
+        'Quinze de Novembro' => 'QN',
+        'Selbach' => 'SB',
+        'Colorado' => 'CO',
+        'Alto Alegre' => 'AA',
+        'Fortaleza dos Valos' => 'FV',
+        'Tapera' => 'TP',
+        'Lagoa dos Três Cantos' => 'LTC',
+        'Saldanha Marinho' => 'SM',
+        'Espumoso' => 'EP',
+        'Campos Borges' => 'CB',
+        'Santa Bárbara do Sul' => 'SBS',
+        'Não-Me-Toque' => 'NMT',
+        'Boa Vista do Cadeado' => 'BVC',
+        'Boa Vista do Incra' => 'BVI',
+        'Carazinho' => 'CZ'
+    ];
+
+    $sigla_cidade = $cidades_map[$data->city] ?? null;
+    if(!$sigla_cidade) {
+        $errors['city'] = "Cidade não atendida";
+    }
+
     // usuario ja existe
     if(empty($errors)) {
-        $user->telefone = $data->phone;
-        $user->email = $data->email;
+        $cliente->telefone = $data->phone;
+        $cliente->email = $data->email;
         
-        if($user->userExists()) {
+        if($cliente->clienteExists()) {
             $errors['general'] = "Usuário já cadastrado com este telefone ou email";
         }
     }
@@ -83,33 +107,35 @@ try {
             "erros" => $errors
         ));
     } else {
-        $user->nome = $data->name;
-        $user->telefone = $data->phone;
-        $user->email = $data->email;
-        $user->endereco = $data->address;
-        $user->numero = $data->number;
-        $user->complemento = $data->complement ?? '';
-        $user->cidade = $data->city;
-        $user->senha = $data->password;
-        $user->eh_admin = false;
+        $cliente->nome = $data->name;
+        $cliente->telefone = $data->phone;
+        $cliente->email = $data->email;
+        $cliente->rua = $data->address;
+        $cliente->numero = $data->number;
+        $cliente->complemento = $data->complement ?? '';
+        $cliente->bairro = $data->neighborhood ?? '';
+        $cliente->cep = $data->cep ?? '';
+        $cliente->sigla_cidade = $sigla_cidade;
+        $cliente->senha = $data->password;
 
-        if($user->create()) {
-            $user->readOne();
+        if($cliente->create()) {
+            $cliente->readOne();
             
             $response = array(
                 "sucesso" => true,
                 "mensagem" => "Conta criada com sucesso!",
                 "usuario" => array(
-                    "id" => $user->id,
-                    "nome" => $user->nome,
-                    "telefone" => $user->telefone,
-                    "email" => $user->email,
-                    "endereco" => $user->endereco,
-                    "numero" => $user->numero,
-                    "complemento" => $user->complemento,
-                    "cidade" => $user->cidade,
-                    "eh_admin" => $user->eh_admin,
-                    "criado_em" => $user->criado_em
+                    "id" => $cliente->codigo,
+                    "nome" => $cliente->nome,
+                    "telefone" => $cliente->telefone,
+                    "email" => $cliente->email,
+                    "endereco" => $cliente->rua,
+                    "numero" => $cliente->numero,
+                    "complemento" => $cliente->complemento,
+                    "cidade" => $cliente->sigla_cidade,
+                    "bairro" => $cliente->bairro,
+                    "cep" => $cliente->cep,
+                    "criado_em" => $cliente->criado_em
                 )
             );
             

@@ -19,9 +19,9 @@ if(!empty($data->username) && !empty($data->password)) {
             "sucesso" => true,
             "mensagem" => "Login realizado com sucesso!",
             "admin" => array(
-                "id" => $admin->id,
-                "nome_usuario" => $admin->nome_usuario,
-                "funcao" => $admin->funcao,
+                "id" => $admin->cod_admin,
+                "nome_usuario" => $admin->login,
+                "funcao" => $admin->super_admin ? 'super_admin' : 'admin',
                 "criado_em" => $admin->criado_em
             )
         );

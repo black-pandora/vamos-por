@@ -40,9 +40,9 @@ try {
                     extract($row);
                     
                     $admin_item = array(
-                        "id" => $id,
-                        "nome_usuario" => $nome_usuario,
-                        "funcao" => $funcao,
+                        "id" => $cod_admin,
+                        "nome_usuario" => $login,
+                        "funcao" => $super_admin ? 'super_admin' : 'admin',
                         "criado_em" => $criado_em
                     );
                     
@@ -69,9 +69,9 @@ try {
             
             if(!empty($data->username) && !empty($data->password) && !empty($data->role)) {
                 
-                $admin->nome_usuario = $data->username;
+                $admin->login = $data->username;
                 
-                if($admin->usernameExists()) {
+                if($admin->loginExists()) {
                     http_response_code(400);
                     echo json_encode(array(
                         "sucesso" => false,
@@ -81,14 +81,14 @@ try {
                 }
                 
                 $admin->senha = $data->password;
-                $admin->funcao = $data->role;
+                $admin->super_admin = ($data->role === 'super_admin');
 
                 if($admin->create()) {
                     http_response_code(201);
                     echo json_encode(array(
                         "sucesso" => true,
                         "mensagem" => "Administrador criado com sucesso!",
-                        "id" => $admin->id
+                        "id" => $admin->cod_admin
                     ));
                 } else {
                     http_response_code(500);
@@ -111,7 +111,7 @@ try {
             $data = json_decode(file_get_contents("php://input"));
             
             if(!empty($data->id)) {
-                $admin->id = $data->id;
+                $admin->cod_admin = $data->id;
 
                 if($admin->delete()) {
                     http_response_code(200);

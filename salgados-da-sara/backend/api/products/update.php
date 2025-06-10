@@ -1,25 +1,34 @@
 <?php
 include_once '../../config/cors.php';
 include_once '../../config/database.php';
-include_once '../../models/Product.php';
+include_once '../../models/Produto.php';
 
 $database = new Database();
 $db = $database->getConnection();
 
-$product = new Product($db);
+$produto = new Produto($db);
 
 $data = json_decode(file_get_contents("php://input"));
 
 if(!empty($data->id) && !empty($data->name) && !empty($data->price) && !empty($data->category)) {
     
-    $product->id = $data->id;
-    $product->nome = $data->name;
-    $product->preco = $data->price;
-    $product->categoria = $data->category;
-    $product->descricao = $data->description ?? '';
-    $product->eh_porcionado = $data->is_portioned ?? false;
+    // Mapear categoria do formato antigo para novo
+    $categoria_map = [
+        'salgados' => 1,
+        'sortidos' => 2,
+        'assados' => 3,
+        'especiais' => 4,
+        'opcionais' => 5
+    ];
+    
+    $produto->id_produto = $data->id;
+    $produto->nome = $data->name;
+    $produto->preco = $data->price;
+    $produto->sabor = $data->flavor ?? '';
+    $produto->id_categoria = $categoria_map[$data->category] ?? 1;
+    $produto->eh_porcionado = $data->is_portioned ?? false;
 
-    if($product->update()) {
+    if($produto->update()) {
         http_response_code(200);
         echo json_encode(array(
             "sucesso" => true,
